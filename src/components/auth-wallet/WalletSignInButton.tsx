@@ -5,8 +5,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { afterSignIn, friendlyWalletError, useWalletUser } from './use-wallet-user'
 
-const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
-
 /**
  * Sign in with a wallet signature (no transaction, no gas).
  * Lists every wagmi connector: injected wallets, WalletConnect, and the preview test wallets when present.
@@ -44,7 +42,8 @@ export function WalletSignInButton({ redirectTo, className }: { redirectTo?: str
   if (wallet.status === 'signedIn') {
     return (
       <div className={`flex items-center gap-2 ${className ?? ''}`}>
-        <span className="text-sm text-muted-foreground" title={wallet.address}>{short(wallet.address)}</span>
+        {/* D317: a plain "Signed in", never the wallet's code; the code stays in the tooltip. */}
+        <span className="text-sm text-muted-foreground" title={wallet.address}>Signed in</span>
         {wallet.accountMismatch && <span className="text-xs text-amber-600">Your wallet switched accounts.</span>}
         <Button variant="outline" size="sm" disabled={busy} onClick={() => run(async () => wallet.signOut(), false)}>Sign out</Button>
       </div>

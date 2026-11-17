@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { Address } from 'viem'
 import { useAccount, useConnect, useSignMessage, useSwitchChain, type Connector } from 'wagmi'
 import { buildSignInMessage } from '@/lib/auth-wallet/message'
@@ -16,8 +16,10 @@ export type WalletUserState =
 // One shared state for every component on the page.
 let state: WalletUserState = { status: 'loading' }
 let inflight: Promise<void> | null = null
-// A sign-in that follows the player switcher is running (one at a time for the whole page).
-let following = false
+// The player a Play-as sign-in is following right now (one at a time for the whole page; D316).
+let followingTo: string | null = null
+// The player whose follow sign-in gave up, so it isn't retried on every render (cleared by the next switch).
+let followFailed: string | null = null
 // The test-wallet account this page last saw, so a switch can be told apart from a page load (D289).
 let lastPlayer: string | null = null
 // One sign-in at a time for the whole page (D308): the nonce is a single cookie, so two sign-ins at
@@ -49,6 +51,50 @@ export function followPlayer(sessionAddress: string, connected: string, previous
   if (previous !== null && previous.toLowerCase() === connected.toLowerCase()) return 'none'
   return 'sign_in'
 }
+const same = (a: string | null | undefined, b: string | null | undefined) => !!a && !!b && a.toLowerCase() === b.toLowerCase()
+
+/**
+ * A Play-as switch signs in as the new player by itself (D316, round 9 M2). Round 9's switch to
+ * Alice kept Carol signed in ("Your wallet switched accounts.", Carol's data): the old follow marked
+ * the new player as seen before its sign-in ran, so one failed or overlapping sign-in left the old
+ * session in place for good. Now the old session is signed out first, the new player signs in (with
+ * a retry), the player counts as followed only once that worked, and the page reloads so everything
+ * on it is the new player's.
+ */
+async function followSwitch(target: string, signIn: (connector?: Connector) => Promise<void>, connector: Connector | undefined): Promise<void> {
+  if (same(followingTo, target) || same(followFailed, target)) return
+  followingTo = target
+  try {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      // Another sign-in (the automatic one, a button) finishes first: the nonce is one cookie.
+      if (signingIn) await signingIn.catch(() => undefined)
+      const now = previewPlayers()?.getCurrent().address
+      if (now && !same(now, target)) return // a newer switch took over
+      if (state.status === 'signedIn' && same(state.address, target)) {
+        lastPlayer = target
+        return
+      }
+      const before = state.status === 'signedIn' ? state.address : null
+      try {
+        // The old player's session ends first, so a sign-in that fails never leaves them signed in.
+        if (before) await fetch(api('/api/auth/wallet/logout'), { method: 'POST', credentials: 'same-origin' })
+        await signIn(connector)
+        if (state.status !== 'signedIn' || !same(state.address, target)) throw new Error('Sign-in failed')
+        lastPlayer = target
+        // Everything the page loaded was the old player's: show the new player's own data.
+        if (before && typeof window !== 'undefined') window.location.reload()
+        return
+      } catch {
+        await new Promise((r) => setTimeout(r, 700 * (attempt + 1)))
+      }
+    }
+    followFailed = target
+    await refreshSession()
+  } finally {
+    if (same(followingTo, target)) followingTo = null
+  }
+}
+
 const listeners = new Set<() => void>()
 const setState = (next: WalletUserState) => {
   state = next
@@ -170,6 +216,8 @@ export function useWalletUser() {
       } else if (!isConnected || !address) {
         throw new Error('No wallet found')
       }
+      // A test wallet signs as the player chosen in the bar: wagmi's account can lag a switch (D316).
+      if (isTestWallet(toConnect ?? current)) address = (previewPlayers()?.getCurrent().address as Address | undefined) ?? address
       if (!address) throw new Error('No wallet account')
       if (chainId !== appChainId) await switchChainAsync({ chainId: appChainId })
 
@@ -214,7 +262,7 @@ export function useWalletUser() {
   // "Play as" (the preview's player switcher) changes the test wallet's account. The session follows
   // it: the new player signs in by itself, since a test wallet signs with no prompt (D274).
   useEffect(() => {
-    if (user.status !== 'signedIn' || !connected || !isTestWallet(current) || following) return
+    if (user.status !== 'signedIn' || !connected || !isTestWallet(current) || followingTo) return
     const players = previewPlayers()
     const what = followPlayer(user.address, connected, lastPlayer, players?.players.map((p) => p.address) ?? [])
     if (what === 'switch_player') {
@@ -227,14 +275,11 @@ export function useWalletUser() {
       lastPlayer = user.address
       return
     }
-    lastPlayer = connected
-    if (what === 'none') return
-    following = true
-    void signIn(current)
-      .catch(() => undefined)
-      .finally(() => {
-        following = false
-      })
+    if (what === 'none') {
+      lastPlayer = connected
+      return
+    }
+    void followSwitch(connected, signIn, current)
   }, [user, connected, current, signIn])
 
   const signOut = useCallback(async () => {
@@ -261,17 +306,26 @@ export function usePreviewPlayerSession(): void {
   const wallet = useWalletUser()
   const { isConnected, connector } = useAccount()
   const [switches, setSwitches] = useState(0)
+  const status = wallet.status
+  const { signIn, connectors } = wallet
+  // The bar's own switch event, so the follow never waits on wagmi's account change (D316).
+  const signInRef = useRef(signIn)
+  signInRef.current = signIn
+  const connectorsRef = useRef(connectors)
+  connectorsRef.current = connectors
   useEffect(
     () =>
       previewPlayers()?.subscribe?.(() => {
         optedOut = false
         autoTried = null
+        followFailed = null
         setSwitches((n) => n + 1)
+        const next = previewPlayers()?.getCurrent().address
+        const test = connectorsRef.current.find((c) => isTestWallet(c))
+        if (next && test && state.status === 'signedIn' && !same(state.address, next)) void followSwitch(next, signInRef.current, test)
       }),
     [],
   )
-  const status = wallet.status
-  const { signIn, connectors } = wallet
   useEffect(() => {
     const players = previewPlayers()
     if (status !== 'signedOut' || optedOut || signingIn || !players) return
