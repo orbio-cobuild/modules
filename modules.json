@@ -1,0 +1,262 @@
+{
+  "name": "@cofounder/modules",
+  "version": "0.1.11",
+  "modules": {
+    "agent-api": {
+      "version": "0.1.0",
+      "files": [
+        "src/lib/agent-api/admin.ts",
+        "src/lib/agent-api/dispatch.ts",
+        "src/lib/agent-api/docs.ts",
+        "src/lib/agent-api/index.ts",
+        "src/lib/agent-api/keys.ts",
+        "src/lib/agent-api/mcp.ts",
+        "src/lib/agent-api/rest.ts",
+        "src/lib/agent-api/schema.ts",
+        "src/lib/agent-api/server.ts",
+        "src/lib/agent-api/stores.ts",
+        "src/lib/agent-api/types.ts"
+      ]
+    },
+    "agent-loop": {
+      "version": "0.1.0",
+      "files": [
+        "src/jobs/agent-loop.ts",
+        "src/lib/agent-loop/approvals.ts",
+        "src/lib/agent-loop/claims.ts",
+        "src/lib/agent-loop/config.ts",
+        "src/lib/agent-loop/control.ts",
+        "src/lib/agent-loop/decision.ts",
+        "src/lib/agent-loop/gateway-model.ts",
+        "src/lib/agent-loop/index.ts",
+        "src/lib/agent-loop/inputs.ts",
+        "src/lib/agent-loop/money.ts",
+        "src/lib/agent-loop/orbio-http.ts",
+        "src/lib/agent-loop/runner.ts",
+        "src/lib/agent-loop/server.ts",
+        "src/lib/agent-loop/store.ts",
+        "src/lib/agent-loop/types.ts"
+      ]
+    },
+    "auth-orbio": {
+      "version": "0.1.0",
+      "files": [
+        "src/components/auth-orbio/OrbioSignInButton.tsx",
+        "src/components/auth-orbio/use-orbio-user.ts",
+        "src/lib/auth-orbio/config-schema.ts",
+        "src/lib/auth-orbio/config.ts",
+        "src/lib/auth-orbio/cookies.ts",
+        "src/lib/auth-orbio/crypto.ts",
+        "src/lib/auth-orbio/handlers.ts",
+        "src/lib/auth-orbio/oauth.ts",
+        "src/lib/auth-orbio/sample.ts",
+        "src/lib/auth-orbio/server.ts",
+        "src/lib/auth-orbio/session.ts",
+        "src/lib/auth-orbio/store.ts",
+        "src/lib/auth-orbio/tokens.ts"
+      ]
+    },
+    "auth-wallet": {
+      "version": "0.1.0",
+      "files": [
+        "src/components/auth-wallet/WalletProviders.tsx",
+        "src/components/auth-wallet/WalletSignInButton.tsx",
+        "src/components/auth-wallet/use-wallet-user.ts",
+        "src/lib/auth-wallet/chain.ts",
+        "src/lib/auth-wallet/config-schema.ts",
+        "src/lib/auth-wallet/config.ts",
+        "src/lib/auth-wallet/cookies.ts",
+        "src/lib/auth-wallet/handlers.ts",
+        "src/lib/auth-wallet/message.ts",
+        "src/lib/auth-wallet/server.ts",
+        "src/lib/auth-wallet/session.ts",
+        "src/lib/auth-wallet/store.ts",
+        "src/lib/auth-wallet/wagmi.ts"
+      ]
+    },
+    "chain": {
+      "version": "0.1.0",
+      "files": [
+        "src/jobs/chain-refresh.ts",
+        "src/lib/chain/abi.ts",
+        "src/lib/chain/chains.ts",
+        "src/lib/chain/client.ts",
+        "src/lib/chain/format.ts",
+        "src/lib/chain/index.ts",
+        "src/lib/chain/orbio.ts",
+        "src/lib/chain/reader.ts",
+        "src/lib/chain/snapshots.ts",
+        "src/lib/chain/tx.ts"
+      ]
+    },
+    "db": {
+      "version": "0.1.0",
+      "files": [
+        "src/lib/db/client.ts",
+        "src/lib/db/env.ts",
+        "src/lib/db/errors.ts",
+        "src/lib/db/index.ts",
+        "src/lib/db/sample-data.ts",
+        "src/lib/db/server.ts"
+      ]
+    },
+    "fair-verify": {
+      "version": "0.1.0",
+      "files": [
+        "src/components/fair-verify/FairVerifyPanel.tsx",
+        "src/components/fair-verify/HowItWorks.tsx",
+        "src/lib/fair-verify/abi.ts",
+        "src/lib/fair-verify/chain.ts",
+        "src/lib/fair-verify/config-schema.ts",
+        "src/lib/fair-verify/config.ts",
+        "src/lib/fair-verify/derive.ts",
+        "src/lib/fair-verify/sample.ts",
+        "src/lib/fair-verify/verify.ts"
+      ]
+    },
+    "gating": {
+      "version": "0.1.0",
+      "files": [
+        "src/components/gating/GateNotice.tsx",
+        "src/components/gating/Gated.tsx",
+        "src/components/gating/use-gate.ts",
+        "src/lib/gating/chain.ts",
+        "src/lib/gating/check.ts",
+        "src/lib/gating/config-schema.ts",
+        "src/lib/gating/config.ts",
+        "src/lib/gating/sample.ts",
+        "src/lib/gating/server.ts"
+      ]
+    },
+    "jobs": {
+      "version": "0.1.0",
+      "files": [
+        "src/jobs/jobs-prune.ts",
+        "src/lib/jobs/auth.ts",
+        "src/lib/jobs/cron.ts",
+        "src/lib/jobs/define.ts",
+        "src/lib/jobs/index.ts",
+        "src/lib/jobs/route.ts",
+        "src/lib/jobs/runner.ts",
+        "src/lib/jobs/store.ts",
+        "src/lib/jobs/types.ts",
+        "src/lib/jobs/webhooks.ts"
+      ]
+    },
+    "mind-feed": {
+      "version": "0.1.0",
+      "files": [
+        "src/components/mind-feed/FeedItem.tsx",
+        "src/components/mind-feed/LiveRefresh.tsx",
+        "src/components/mind-feed/MindFeed.tsx",
+        "src/components/mind-feed/MindFeedView.tsx",
+        "src/components/mind-feed/StatsBar.tsx",
+        "src/lib/mind-feed/config.ts",
+        "src/lib/mind-feed/data.ts",
+        "src/lib/mind-feed/format.ts",
+        "src/lib/mind-feed/index.ts",
+        "src/lib/mind-feed/rss.ts",
+        "src/lib/mind-feed/server.ts"
+      ]
+    },
+    "notify": {
+      "version": "0.1.0",
+      "files": [
+        "src/jobs/notify-drain.ts",
+        "src/lib/notify/approvals.ts",
+        "src/lib/notify/claims.ts",
+        "src/lib/notify/email.ts",
+        "src/lib/notify/format.ts",
+        "src/lib/notify/index.ts",
+        "src/lib/notify/outbox.ts",
+        "src/lib/notify/routes.ts",
+        "src/lib/notify/server.ts",
+        "src/lib/notify/store.ts",
+        "src/lib/notify/telegram.ts",
+        "src/lib/notify/types.ts"
+      ]
+    },
+    "orbio-tools": {
+      "version": "0.1.0",
+      "files": [
+        "src/lib/orbio-tools/config.ts",
+        "src/lib/orbio-tools/core.ts",
+        "src/lib/orbio-tools/index.ts",
+        "src/lib/orbio-tools/money.ts",
+        "src/lib/orbio-tools/server.ts",
+        "src/lib/orbio-tools/store.ts"
+      ]
+    },
+    "payments": {
+      "version": "0.1.0",
+      "files": [
+        "src/components/payments/PayButton.tsx",
+        "src/components/payments/RecentTips.tsx",
+        "src/components/payments/TipButton.tsx",
+        "src/components/payments/use-payment.ts",
+        "src/lib/payments/chain.ts",
+        "src/lib/payments/config-schema.ts",
+        "src/lib/payments/config.ts",
+        "src/lib/payments/handlers.ts",
+        "src/lib/payments/intent.ts",
+        "src/lib/payments/server.ts",
+        "src/lib/payments/store.ts",
+        "src/lib/payments/stripe.ts",
+        "src/lib/payments/tokens.ts",
+        "src/lib/payments/unsigned-tx.ts",
+        "src/lib/payments/verify.ts"
+      ]
+    },
+    "play": {
+      "version": "0.1.0",
+      "files": []
+    },
+    "project-data": {
+      "version": "0.1.0",
+      "files": []
+    },
+    "swap": {
+      "version": "0.1.0",
+      "files": [
+        "src/components/swap/SwapWidget.tsx",
+        "src/lib/swap/abis.ts",
+        "src/lib/swap/chain.ts",
+        "src/lib/swap/config-schema.ts",
+        "src/lib/swap/config.ts",
+        "src/lib/swap/encode.ts",
+        "src/lib/swap/handlers.ts",
+        "src/lib/swap/quote.ts",
+        "src/lib/swap/sample.ts",
+        "src/lib/swap/unsigned-tx.ts"
+      ]
+    },
+    "token-page": {
+      "version": "0.1.0",
+      "files": [
+        "src/components/token-page/ComingSoon.tsx",
+        "src/components/token-page/LaunchTerms.tsx",
+        "src/components/token-page/TokenPage.tsx",
+        "src/components/token-page/TreasuryPanel.tsx",
+        "src/lib/token-page/claims.ts",
+        "src/lib/token-page/format.ts",
+        "src/lib/token-page/index.ts",
+        "src/lib/token-page/launchpad.ts",
+        "src/lib/token-page/sample.ts",
+        "src/lib/token-page/treasury.ts"
+      ]
+    },
+    "ui-kit": {
+      "version": "0.3.1",
+      "files": [
+        "src/components/ui-kit/art.tsx",
+        "src/components/ui-kit/crypto.tsx",
+        "src/components/ui-kit/dither.tsx",
+        "src/components/ui-kit/effects.tsx",
+        "src/components/ui-kit/index.ts",
+        "src/components/ui-kit/interactive.tsx",
+        "src/components/ui-kit/primitives.tsx",
+        "src/components/ui-kit/sections.tsx"
+      ]
+    }
+  }
+}

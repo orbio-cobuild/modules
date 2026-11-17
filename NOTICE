@@ -1,0 +1,10 @@
+@cofounder/modules
+Copyright 2026 the Cofounder authors. Released under the MIT License (LICENSE).
+
+This package is generated from the Cofounder monorepo (packages/modules/*/files).
+It contains no third-party source code. The apps that install it pull their own
+npm dependencies (next, react, viem, wagmi, zod, jose, @supabase/supabase-js…),
+each under its own license.
+
+This package holds code only. It contains no keys, tokens or other secrets:
+every secret an app needs is read from that app's own environment variables.
