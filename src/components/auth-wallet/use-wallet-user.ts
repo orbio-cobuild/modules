@@ -54,6 +54,18 @@ export function followPlayer(sessionAddress: string, connected: string, previous
 const same = (a: string | null | undefined, b: string | null | undefined) => !!a && !!b && a.toLowerCase() === b.toLowerCase()
 
 /**
+ * A person's name for visitor copy ("Posted by …", D319), never a wallet code: "You" for the signed-in
+ * wallet, the practice player's name in a preview (Alice, Bob, Carol), else a short member label.
+ */
+export function personLabel(address: string | null | undefined, me?: string | null): string {
+  if (!address) return 'Someone'
+  if (same(address, me)) return 'You'
+  const player = (previewPlayers()?.players as readonly { address: string; name?: string }[] | undefined)?.find((p) => same(p.address, address))
+  if (player?.name) return player.name
+  return `Member ${address.slice(-4).toUpperCase()}`
+}
+
+/**
  * A Play-as switch signs in as the new player by itself (D316, round 9 M2). Round 9's switch to
  * Alice kept Carol signed in ("Your wallet switched accounts.", Carol's data): the old follow marked
  * the new player as seen before its sign-in ran, so one failed or overlapping sign-in left the old
@@ -281,6 +293,20 @@ export function useWalletUser() {
     }
     void followSwitch(connected, signIn, current)
   }, [user, connected, current, signIn])
+
+  // D319: the project-data helper saveRow() asks for this when the app's route answers "not signed in"
+  // (round 10's second bounty lost its title that way: the wallet was connected, the session was gone).
+  // It signs in again (a test wallet with no prompt; a real wallet asks once) and says whether it worked.
+  useEffect(() => {
+    const g = globalThis as { __cofounderSignInAgain?: () => Promise<boolean> }
+    g.__cofounderSignInAgain = async () => {
+      await refreshSession()
+      if (state.status === 'signedIn') return true
+      const test = connectors.find((c) => isTestWallet(c))
+      await signIn(previewPlayers() && test ? test : undefined)
+      return (state.status as WalletUserState['status']) === 'signedIn'
+    }
+  }, [signIn, connectors])
 
   const signOut = useCallback(async () => {
     optedOut = true

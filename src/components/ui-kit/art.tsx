@@ -70,7 +70,8 @@ export function HeroObjects({ wide = false, art = siteArt() }: { wide?: boolean;
 }
 
 /**
- * The split hero's 3D objects on laptop screens (D303): between 1024 and 1535 px the side gutters
+ * The split hero's 3D objects on laptop and tablet screens (D303; from 768 px since D319, because the
+ * builder's preview pane is narrower than 1024 px and round 10 saw no hero art there): below 1536 px the side gutters
  * beside a max-w-6xl hero are too narrow for the clusters (they rendered 0×0 at 1440), so two pieces
  * sit on the corners of the hero's picture instead, smaller, still decoration only. Put it inside
  * the `relative` wrapper of the visual.
@@ -79,9 +80,10 @@ export function VisualObjects({ art = siteArt() }: { art?: SiteArt | null }) {
   const pieces = art?.hero ?? []
   if (!pieces.length) return null
   const corners = [pieces[0], pieces[1] ?? pieces[0]].filter((p): p is ArtPiece => !!p)
-  const spots = ['-left-12 -top-12 xl:-left-16', '-bottom-12 -right-5 xl:-right-14']
+  // Below lg the visual spans the page and the hero clips what pokes out, so the pieces sit further in (D319).
+  const spots = ['-left-3 -top-10 lg:-left-12 lg:-top-12 xl:-left-16', '-bottom-10 -right-2 lg:-bottom-12 lg:-right-5 xl:-right-14']
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 z-10 hidden lg:block min-[1536px]:hidden" data-hero-objects="visual">
+    <div aria-hidden className="pointer-events-none absolute inset-0 z-10 hidden md:block min-[1536px]:hidden" data-hero-objects="visual">
       {corners.map((p, i) => (
         <div key={`${p.src}-${i}`} className={cn('ui-art-bob absolute w-16 xl:w-20', spots[i])} style={{ animationDelay: `-${i * 1.6}s` }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
