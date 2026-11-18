@@ -34,7 +34,7 @@ let autoTried: string | null = null
  * The preview's player switcher (devchain's "Play as"), when the page has one. Read off globalThis
  * so this module never imports the devchain package, which live builds don't have.
  */
-function previewPlayers(): { getCurrent(): { address: string }; switchPlayer(q: string): unknown; players: readonly { address: string }[]; subscribe?(listener: () => void): () => void } | undefined {
+function previewPlayers(): { getCurrent(): { address: string }; switchPlayer(q: string): unknown; players: readonly { address: string }[]; subscribe?(listener: () => void): () => void; chosen?: () => boolean } | undefined {
   return (globalThis as Record<string, unknown>).__cofounderPreviewPlayers as ReturnType<typeof previewPlayers>
 }
 
@@ -44,10 +44,13 @@ function previewPlayers(): { getCurrent(): { address: string }; switchPlayer(q: 
  * "Play as Bob" turned back into Alice after every reload, because the default player signed in
  * over Bob's session. After the person switched, the session follows the new player (D274).
  */
-export function followPlayer(sessionAddress: string, connected: string, previous: string | null, playerAddresses: readonly string[]): 'sign_in' | 'switch_player' | 'none' {
+export function followPlayer(sessionAddress: string, connected: string, previous: string | null, playerAddresses: readonly string[], chosen = false): 'sign_in' | 'switch_player' | 'none' {
   if (sessionAddress.toLowerCase() === connected.toLowerCase()) return 'none'
   const isPlayer = playerAddresses.some((a) => a.toLowerCase() === sessionAddress.toLowerCase())
-  if (previous === null && isPlayer) return 'switch_player'
+  // D321 (round 11 M1): a player the person picked (remembered across the reload) wins over an older
+  // session: a switch whose sign-in hadn't finished when a chat change reloaded the page used to be
+  // undone, and the person went on as the previous player.
+  if (previous === null && isPlayer && !chosen) return 'switch_player'
   if (previous !== null && previous.toLowerCase() === connected.toLowerCase()) return 'none'
   return 'sign_in'
 }
@@ -113,15 +116,41 @@ const setState = (next: WalletUserState) => {
   listeners.forEach((l) => l())
 }
 
+/**
+ * Reads the session again. Only the app's own answer changes it (D321, audit L4): a dropped
+ * connection, a server restarting, or a page that isn't the app's (a sleeping preview's note) used to
+ * read as "signed out" and show the sign-in prompt to someone who was signed in. Those keep what is
+ * known and try again shortly; a first load that never gets an answer ends as signed out.
+ */
 async function refreshSession(): Promise<void> {
-  inflight ??= fetch(api('/api/auth/wallet/me'), { cache: 'no-store', credentials: 'same-origin' })
-    .then((r) => r.json())
-    .then((me) => setState(me.signedIn ? { status: 'signedIn', address: me.address, chainId: me.chainId, expiresAt: me.expiresAt } : { status: 'signedOut' }))
-    .catch(() => setState({ status: 'signedOut' }))
-    .finally(() => {
-      inflight = null
-    })
+  inflight ??= (async () => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const r = await fetch(api('/api/auth/wallet/me'), { cache: 'no-store', credentials: 'same-origin' })
+        if (!r.ok || !(r.headers.get('content-type') ?? '').includes('json')) throw new Error(`me answered ${r.status}`)
+        const me = (await r.json()) as { signedIn?: boolean; address: Address; chainId: number; expiresAt: number }
+        setState(me.signedIn ? { status: 'signedIn', address: me.address, chainId: me.chainId, expiresAt: me.expiresAt } : { status: 'signedOut' })
+        return
+      } catch {
+        if (state.status !== 'loading' && attempt === 0) {
+          // Keep what is known; check once more in a moment, without holding up the caller.
+          setTimeout(() => void refreshSession(), 3_000)
+          return
+        }
+        await new Promise((res) => setTimeout(res, 800 * (attempt + 1)))
+      }
+    }
+    if (state.status === 'loading') setState({ status: 'signedOut' })
+  })().finally(() => {
+    inflight = null
+  })
   return inflight
+}
+
+// The account the sign-in is for (D321): the contract helpers refuse to pay from another account, so
+// a payment and the details saved for it always belong to the same person.
+if (typeof window !== 'undefined') {
+  ;(globalThis as { __cofounderSessionAddress?: () => string | undefined }).__cofounderSessionAddress = () => (state.status === 'signedIn' ? state.address : undefined)
 }
 
 /**
@@ -276,7 +305,7 @@ export function useWalletUser() {
   useEffect(() => {
     if (user.status !== 'signedIn' || !connected || !isTestWallet(current) || followingTo) return
     const players = previewPlayers()
-    const what = followPlayer(user.address, connected, lastPlayer, players?.players.map((p) => p.address) ?? [])
+    const what = followPlayer(user.address, connected, lastPlayer, players?.players.map((p) => p.address) ?? [], !!players?.chosen?.() && same(players.getCurrent().address, connected))
     if (what === 'switch_player') {
       // The signed-in player stays the one playing; the wallet follows on the controller's change.
       try {
@@ -297,16 +326,22 @@ export function useWalletUser() {
   // D319: the project-data helper saveRow() asks for this when the app's route answers "not signed in"
   // (round 10's second bounty lost its title that way: the wallet was connected, the session was gone).
   // It signs in again (a test wallet with no prompt; a real wallet asks once) and says whether it worked.
+  // D321 (audit M4): with `expected` (the wallet that paid), only that wallet: a person who switched
+  // to another account in the meantime is never signed in as it to save someone else's details.
   useEffect(() => {
-    const g = globalThis as { __cofounderSignInAgain?: () => Promise<boolean> }
-    g.__cofounderSignInAgain = async () => {
+    const g = globalThis as { __cofounderSignInAgain?: (expected?: string) => Promise<boolean> }
+    g.__cofounderSignInAgain = async (expected?: string) => {
       await refreshSession()
-      if (state.status === 'signedIn') return true
+      if (state.status === 'signedIn' && (!expected || same(state.address, expected))) return true
       const test = connectors.find((c) => isTestWallet(c))
-      await signIn(previewPlayers() && test ? test : undefined)
-      return (state.status as WalletUserState['status']) === 'signedIn'
+      const viaTest = !!previewPlayers() && !!test
+      const signer = viaTest ? previewPlayers()?.getCurrent().address : connected
+      if (expected && !same(signer, expected)) return false
+      await signIn(viaTest ? test : undefined)
+      const now = state as WalletUserState
+      return now.status === 'signedIn' && (!expected || same(now.address, expected))
     }
-  }, [signIn, connectors])
+  }, [signIn, connectors, connected])
 
   const signOut = useCallback(async () => {
     optedOut = true

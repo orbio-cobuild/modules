@@ -81,7 +81,9 @@ export function VisualObjects({ art = siteArt() }: { art?: SiteArt | null }) {
   if (!pieces.length) return null
   const corners = [pieces[0], pieces[1] ?? pieces[0]].filter((p): p is ArtPiece => !!p)
   // Below lg the visual spans the page and the hero clips what pokes out, so the pieces sit further in (D319).
-  const spots = ['-left-3 -top-10 lg:-left-12 lg:-top-12 xl:-left-16', '-bottom-10 -right-2 lg:-bottom-12 lg:-right-5 xl:-right-14']
+  // D321 (round 11 L5): the top piece no longer pokes out above the picture, where it sat over the
+  // headline and the site's header; both pieces stay level with the picture's own top and bottom edges.
+  const spots = ['-left-3 top-2 lg:-left-12 xl:-left-16', '-right-2 bottom-2 lg:-right-5 xl:-right-14']
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 z-10 hidden md:block min-[1536px]:hidden" data-hero-objects="visual">
       {corners.map((p, i) => (

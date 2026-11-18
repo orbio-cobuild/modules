@@ -2,9 +2,11 @@
  * Server-side Supabase clients. Never import this from a client component.
  *
  * - createServerDb(): acts as the app server (sends x-app-server-key). RLS lets it read and
- *   write every table through the cf_server_all policy. Pass `actingWallet` (after verifying the
- *   wallet's signature, e.g. with the auth-wallet module) to act *for* that wallet, so
- *   wallet_owned policies apply to it.
+ *   write every table through the cf_server_all policy, with or without `actingWallet`.
+ *   `actingWallet` (after verifying the wallet's signature, e.g. with the auth-wallet module) only
+ *   records who the request is for (x-app-wallet); it does NOT narrow what the query can touch
+ *   (D321). A server route must filter by wallet itself: `.eq('wallet_address', me)` on every read,
+ *   update and delete of a wallet's rows.
  * - createPublicDb(): plain publishable-key client for public reads from server components.
  */
 import 'server-only'
